@@ -1,0 +1,8 @@
+node_modules/
+.sketchpad/
+test_verilog/
+/index.js
+coverage/
+.nyc_output/
+.vscode
+docs/
