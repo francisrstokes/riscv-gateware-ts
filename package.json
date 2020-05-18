@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "testware src/index.ts"
+    "test": "testware src/test/integration.ts"
   },
   "author": "",
   "license": "ISC",

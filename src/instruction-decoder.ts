@@ -34,17 +34,15 @@ I = Immediate
 =--------=---------------------+-----+-----+---=
 */
 
-const minBitsFor = x => Math.ceil(Math.log2(x));
-
-const ZERO = Constant(1, 0);
-const RegisterMode = ZERO;
-const ImmediateMode = Constant(1, 1);
-
 const ImmediateArithmetic = Constant(7, 0b0010011);
 const RegisterArithmetic  = Constant(7, 0b0110011);
+const ZERO = Constant(32, 0);
 
 export class InstructionDecoder extends GWModule {
-  instruction = this.input(Signal(32));
+  clk = this.input(Signal());
+  instructionIn = this.input(Signal(32));
+  enable = this.input(Signal());
+  rst = this.input(Signal());
 
   // control signals
   ALUEnable = this.output(Signal());
@@ -57,15 +55,27 @@ export class InstructionDecoder extends GWModule {
   imm12 = this.output(Signal(12));
   func3 = this.output(Signal(3));
 
+  instruction = this.internal(Signal(32));
 
   describe() {
+
+    const whenEnabled = s => this.enable.signExtend(s.width) ['&'] (s);
+
+    this.syncBlock(this.clk, Edge.Positive, [
+      If (this.rst, [
+        this.instruction ['='] (ZERO)
+      ]). ElseIf (this.enable, [
+        this.instruction ['='] (this.instructionIn)
+      ])
+    ]);
+
     this.combinationalLogic([
-      this.opcode ['='] (this.instruction.slice(6, 0)),
-      this.rs2 ['='] (this.instruction.slice(24, 20)),
-      this.rs1 ['='] (this.instruction.slice(19, 15)),
-      this.rd ['='] (this.instruction.slice(11, 7)),
-      this.imm12 ['='] (this.instruction.slice(31, 20)),
-      this.func3 ['='] (this.instruction.slice(14, 12)),
+      this.opcode ['='] (whenEnabled(this.instruction.slice(6, 0))),
+      this.rs2 ['='] (whenEnabled(this.instruction.slice(24, 20))),
+      this.rs1 ['='] (whenEnabled(this.instruction.slice(19, 15))),
+      this.rd ['='] (whenEnabled(this.instruction.slice(11, 7))),
+      this.imm12 ['='] (whenEnabled(this.instruction.slice(31, 20))),
+      this.func3 ['='] (whenEnabled(this.instruction.slice(14, 12))),
     ]);
 
     this.combinationalLogic([

@@ -21,6 +21,7 @@ export const Ops = {
 };
 
 export class ALU extends GWModule {
+  enable = this.input(Signal());
   rs1 = this.input(Signal(32));
   rs2 = this.input(Signal(32));
   imm = this.input(Signal(12));
@@ -54,9 +55,11 @@ export class ALU extends GWModule {
   describe() {
     this.continuousAssignments();
 
+    const whenEnabled = (s) => this.enable.signExtend(32) ['&'] (s);
+
     this.combinationalLogic([
       CombinationalSwitchAssignment(this.aluOut, this.op, [
-        [Ops.ADD,
+        [Ops.ADD, whenEnabled(
           BitChoice(this.i2sel,
             BitChoice(this.mode,
               this.rs1.asSigned() ['+'] (this.input2.asSigned()),
@@ -64,14 +67,14 @@ export class ALU extends GWModule {
             ),
             this.rs1.asSigned() ['+'] (this.input2.asSigned()),
           )
-        ],
+        )],
 
-        [Ops.AND, this.rs1 ['&'] (this.input2)],
-        [Ops.OR,  this.rs1 ['|'] (this.input2)],
-        [Ops.XOR, this.rs1 ['^'] (this.input2)],
+        [Ops.AND, whenEnabled(this.rs1 ['&'] (this.input2))],
+        [Ops.OR,  whenEnabled(this.rs1 ['|'] (this.input2))],
+        [Ops.XOR, whenEnabled(this.rs1 ['^'] (this.input2))],
 
-        [Ops.SLL, this.rs1 ['<<'] (this.shiftBy)],
-        [Ops.SR,
+        [Ops.SLL, whenEnabled(this.rs1 ['<<'] (this.shiftBy))],
+        [Ops.SR, whenEnabled(
           BitChoice(this.mode,
             this.rs1 ['>>'] (this.shiftBy),
             Concat([
@@ -79,10 +82,10 @@ export class ALU extends GWModule {
               this.rs1.asSigned() ['>>>'] (this.shiftBy) .slice(30, 0)
             ])
           )
-        ],
+        )],
 
-        [Ops.SLT, this.rs1.asSigned() ['<'] (this.input2.asSigned())],
-        [Ops.SLTU, this.rs1 ['<'] (this.input2)],
+        [Ops.SLT, whenEnabled(this.rs1.asSigned() ['<'] (this.input2.asSigned()))],
+        [Ops.SLTU, whenEnabled(this.rs1 ['<'] (this.input2))],
       ], ZERO)
     ]);
   }
